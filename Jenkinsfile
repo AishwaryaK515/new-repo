@@ -1,34 +1,59 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = "yourdockerhubuser/myapp:latest"
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials')  // Stored in Jenkins credentials
+    }
+
     tools {
-        maven 'maven'  // Ensure this matches the name in Global Tool Configuration
+        maven 'maven'
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/AishwaryaK515/new-repo.git'
+                git branch: 'master', url: 'https://github.com/AishwaryaK515/new-repo.git'
             }
         }
 
-        stage('Build') {
+        stage('Build & Test') {
             steps {
-                sh 'mvn --version'  // Verify Jenkins is using the correct Maven version
                 sh 'mvn clean package'
+                sh 'mvn test'
             }
         }
 
-        stage('Test') {
+        stage('Build Docker Image') {
             steps {
-                sh 'mvn test'
+                sh '''
+                docker build -t $DOCKER_IMAGE .
+                '''
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                sh '''
+                echo $DOCKER_CREDENTIALS | docker login -u yourdockerhubuser --password-stdin
+                docker push $DOCKER_IMAGE
+                '''
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "Deploying the application..."
+                echo 'Deploying the application...'
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment Successful!"
+        }
+        failure {
+            echo "Deployment Failed!"
         }
     }
 }
