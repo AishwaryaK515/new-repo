@@ -34,10 +34,9 @@ pipeline {
 
         stage('Push Docker Image to Docker Hub') {
             steps {
-                sh '''
-                echo $DOCKER_CREDENTIALS | docker login -u aishwaryak2601 --password-stdin
-                docker push $DOCKER_IMAGE
-                '''
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+            sh 'docker push aishwaryak2601/my-java-app:latest'
             }
         }
 
